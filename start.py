@@ -4,16 +4,23 @@ import speech_recognition as sr
 from fuzzywuzzy import fuzz
 import pyttsx3
 import datetime
+import pyperclip
 
+# TODO: Оптимизировать и изменить opts так, чтобы ассистент мог сам добавлять и удалять данные в свои массивы
 opts = {
     "alias": ('юля', 'юль', 'юленька', 'юляш', 'юла', 'юлик'),
-    "tbr": ('что', 'на', 'который', 'сколько', 'по', 'сейчас', 'какой'),
+    "tbr": ('что', 'на', 'который', 'сколько', 'по', 'сейчас', 'мне', 'какой'),
     "cmds": {
         "ctime": ('время', ' час', 'часах'),
+        "copy": ('скопируй смайлик', 'дай смайлик', ''),
+        "paste": ('', '', ''),
+        "learn_tbr": ('', '', ''),
         "other": (),
         "another": ()
     }
 }
+
+smthToCopy = { "idk": "¯\_(ツ)_/¯" }
 
 # Функции
 def speak(what):
@@ -60,8 +67,9 @@ def execute_cmd(cmd):
     if cmd == 'ctime':
         now = datetime.datetime.now()
         speak('Сейчас ' + str(now.hour) + ":" + str(now.minute))
-    elif cmd == '':
-        pass
+    elif cmd == 'copy':
+        pyperclip.copy(smthToCopy['idk'])
+        speak('Скопировала смайлик в буфер обмена!')
     else:
         pass
     
@@ -76,6 +84,7 @@ with m as source:
 speak_engine = pyttsx3.init()
 
 # Доп. пакет голосов
+# НЕ РАБОТАЕТ, ЫЫЫ(((99(
 # voices = speak_engine.getProperty('voices')
 # speak_engine.setProperty('voice', voices[4].id)
 
@@ -83,4 +92,5 @@ speak('Добрый день, Дмитрий!')
 speak('Я Вас слушаю!')
 
 stop_listening = r.listen_in_background(m, callback)
-while True: time.sleep(0.1)
+while True: 
+    time.sleep(0.1)
