@@ -12,7 +12,7 @@ opts = {
     "tbr": ('что', 'на', 'который', 'сколько', 'по', 'сейчас', 'мне', 'какой'),
     "cmds": {
         "ctime": ('время', ' час', 'часах'),
-        "copy": ('скопируй смайлик', 'дай смайлик', ''),
+        "copy": ('скопировать смайлик', 'скопируй смайлик', 'дай смайлик', ''),
         "paste": ('', '', ''),
         "learn_tbr": ('', '', ''),
         "other": (),
@@ -20,7 +20,11 @@ opts = {
     }
 }
 
-smthToCopy = { "idk": "¯\_(ツ)_/¯" }
+smthToCopy = { ('не знаю', 'разведение руками', 'бывает'): "¯\_(ツ)_/¯" }
+
+# templates = { 
+#     "(0)": ""
+# }
 
 # Функции
 def speak(what):
@@ -43,8 +47,15 @@ def callback(recognizer, audio):
             for x in opts['tbr']:
                 cmd = cmd.replace(x, '').strip()
 
+            # Распознаю дополнительные аргументы из фразы
+            extra = ''
+            for x in opts['cmds']:
+               if x in cmd:
+                   extra = cmd.replace(x, '').strip()
+                   break
+
             cmd = recognize_cmd(cmd)
-            execute_cmd(cmd['cmd'])
+            execute_cmd(cmd['cmd'], extra)
 
     except sr.UnknownValueError:
         print('[log] Голос не распознан!')
@@ -63,13 +74,14 @@ def recognize_cmd(cmd):
     
     return RC
 
-def execute_cmd(cmd):
+def execute_cmd(cmd, extra=''):
     if cmd == 'ctime':
         now = datetime.datetime.now()
         speak('Сейчас ' + str(now.hour) + ":" + str(now.minute))
     elif cmd == 'copy':
-        pyperclip.copy(smthToCopy['idk'])
-        speak('Скопировала смайлик в буфер обмена!')
+        copyText = extra
+        pyperclip.copy(smthToCopy[copyText])
+        speak(f'Скопировала {copyText} в буфер обмена!')
     else:
         pass
     
