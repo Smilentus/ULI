@@ -1,68 +1,132 @@
 import os
+import sys
 import time
 import speech_recognition as sr
 from fuzzywuzzy import fuzz
 import pyttsx3
+import pyaudio
 import datetime
 import pyperclip
+import saver
+from logger import *
 
-# TODO: Оптимизировать и изменить opts так, чтобы ассистент мог сам добавлять и удалять данные в свои массивы
+# Глобальные переменные
+RECOGNITION_LIMIT = 80
+
+# Доступные команды
 opts = {
-    "alias": ('юля', 'юль', 'юленька', 'юляш', 'юла', 'юлик'),
-    "tbr": ('что', 'на', 'который', 'сколько', 'по', 'сейчас', 'мне', 'какой'),
+    "alias": ('юля', 'юль', 'юленька', 'юляш', 'юла', 'юлик', 'юлия'),
+    "tbr": ('что', 'на', 'скопировать', 'исключаемое', 'новое', 'пропускное', 'удаляемое', 'скопируй', 'дай', 'который', 'добавь', 'новая', 'запомни', 'выучи', 'сколько', 'по', 'сейчас', 'мне', 'какой', 'новую'),
     "cmds": {
-        "ctime": ('время', ' час', 'часах'),
-        "copy": ('скопировать смайлик', 'скопируй смайлик', 'дай смайлик', ''),
-        "paste": ('', '', ''),
-        "learn_tbr": ('', '', ''),
-        "other": (),
-        "another": ()
+        "ctime": ('время', 'час', 'часах'),
+        "copy": ('смайлик', ),
+        "learn_cmd": ('команду', 'команда'),
+        "learn_alias": ('имя', 'алиас', 'кличка', 'кличку'),
+        "learn_tbr": ('слово', 'исключение'),
+        "open": ('открой', 'открыть', 'запусти', 'включи', 'запустить', 'включить'),
     }
 }
 
-smthToCopy = { ('не знаю', 'разведение руками', 'бывает'): "¯\_(ツ)_/¯" }
+# Программы для открытия
+smthToOpen = {
+    "notepad.exe": ('блокнот', 'черновик', 'записную книжку'),
+    "calc.exe": ('калькулятор', ),
+    "opera.exe": ('браузер', 'опера'),
+    "regedit.exe": ('реестр', 'редактор реестра'),
+    "control.exe": ('панель управления', ),
+    "skype.exe": ('скайп', ),
+    "discord.exe": ('дискорд', ),
+    "cmd.exe": ('командную строку', 'power shell', 'кмд'),
+}
 
-# templates = { 
-#     "(0)": ""
-# }
+# Что-то для копирования
+smthToCopy = { 
+    "¯\_(ツ)_/¯": ('разведение руками', 'не знаю', 'бывает', 'хм'),
+    ":)": ('улыбка', 'радость', 'счастье'),
+    ":D": ('смех') 
+    }
+
+# Объект голосовой штучки
+# Короче костыльное решение, потому что pyttsx3 с приколом
+# Суть в том, что runAndWait() уходит в бесконечный цикл
+class _TTS:
+    engine = None
+
+    def __init__(self):
+        self.engine = pyttsx3.init()
+    
+    def speak(self, text):
+        self.engine.say(text)
+        self.engine.runAndWait()
 
 # Функции
 def speak(what):
-    print(what)
-    speak_engine.say(what)
-    speak_engine.runAndWait()
-    speak_engine.stop()
+    SystemLog('Started speak_engine ...')
+    print(f'[SPEAKING] {what}')
+    tts = _TTS()
+    tts.speak(str(what))
+    del(tts)
+    SystemLog('Stopped speak_engine.')
     
 def callback(recognizer, audio):
     try:
         voice = recognizer.recognize_google(audio, language='ru-RU').lower()
-        print('[log] Распознано: ' + voice)
-
+        SystemLog('Connected to Google Recognize')
+        Log('Распознано: ' + voice)
+        SystemLog(f'Recognized something: {voice}')
         if voice.startswith(opts['alias']):
             cmd = voice
 
+            SystemLog('Starting cleaning from alias ...')
             for x in opts['alias']:
                 cmd = cmd.replace(x, '').strip()
-            
+            SystemLog('Cleaning ALIAS is done ...')
+            SystemLog('CMD: ' + cmd)
+
+            SystemLog('Starting cleaning from tbr ...')
             for x in opts['tbr']:
-                cmd = cmd.replace(x, '').strip()
+                cmd = cmd.replace(x, ' ').strip()
+            SystemLog('Cleaning TBR is done ...')
+            SystemLog('CMD: ' + cmd)
+
+            SystemLog('Starting cleaning from double spaces ...')
+            cmd = cmd.replace('  ', ' ').strip()
+            SystemLog('CMD: ' + cmd)
+            SystemLog('Cleaning DOUBLE SPACES is done ...')
 
             # Распознаю дополнительные аргументы из фразы
+            SystemLog('Recognize EXTRA arguments ...')
             extra = ''
-            for x in opts['cmds']:
-               if x in cmd:
-                   extra = cmd.replace(x, '').strip()
-                   break
+            for c, v in opts['cmds'].items():   
+                for x in v:
+                    if x in cmd:
+                        extra = cmd.replace(x, '').strip()
+            SystemLog('EXTRA: ' + extra)
+            SystemLog('Recognizing EXTRA arguments is done ...')
+            
+            # Удаляем лишние аргументы из фразы
+            SystemLog('Starting cleaning EXTRA arguments ...')
+            cmd = cmd.replace(extra, '')
+            SystemLog('Cleaning EXTRA arguments is done ...')
 
             cmd = recognize_cmd(cmd)
-            execute_cmd(cmd['cmd'], extra)
+            if (cmd['percent'] >= RECOGNITION_LIMIT):
+                execute_cmd(cmd['cmd'], extra)
+            else:
+                speak(f'Я распознала команду, но процент удовлетворения слишком маленький {cmd["percent"]}%!')
+                SystemLog('Not enough cmd percentage ({} < {}%)'.format(cmd['percent'], RECOGNITION_LIMIT))
+        else:
+            Log('Текст не удовлетворяет запросу')
 
     except sr.UnknownValueError:
-        print('[log] Голос не распознан!')
+        Log('Голос не распознан!')
     except sr.RequestError as e:
-        print('[log] Неизвестная ошибка! Проверьте интернет соединение! ... \n' + e)
+        Log('Нет сигнала интернета. Проверьте интернет соединение! ... \n' + e)
+    except Exception as e:
+        Log('Незвестная природе ошибка: \n' + e)
 
 def recognize_cmd(cmd):
+    SystemLog('Starting CMD recognition ...')
     RC = {'cmd': '', 'percent': 0}
     for c, v in opts['cmds'].items():
 
@@ -72,37 +136,92 @@ def recognize_cmd(cmd):
                 RC['cmd'] = c
                 RC['percent'] = vrt
     
+    SystemLog('CMD recognition is done ...')
+    SystemLog(f"CMD: {RC['cmd']} with {RC['percent']}%")
+    return RC
+
+def getSmileByCmd(extra):
+    RC = {'smile': '', 'percent': 0}
+    for c, v in smthToCopy.items():
+
+        for x in v: 
+            vrt = fuzz.ratio(extra, x)
+            if vrt > RC['percent']:
+                RC['smile'] = c
+                RC['percent'] = vrt
+    
+    return RC
+            
+def getProgramByCmd(extra):
+    RC = {'program': '', 'percent': 0}
+    for c, v in smthToOpen.items():
+
+        for x in v: 
+            vrt = fuzz.ratio(extra, x)
+            if vrt > RC['percent']:
+                RC['program'] = c
+                RC['percent'] = vrt
+    
     return RC
 
 def execute_cmd(cmd, extra=''):
+    SystemLog('Starting CMD execution ...')
+    SystemLog(f'Execute {cmd} CMD with {extra} arguments')
     if cmd == 'ctime':
         now = datetime.datetime.now()
         speak('Сейчас ' + str(now.hour) + ":" + str(now.minute))
     elif cmd == 'copy':
-        copyText = extra
-        pyperclip.copy(smthToCopy[copyText])
-        speak(f'Скопировала {copyText} в буфер обмена!')
-    else:
+        copyText = getSmileByCmd(extra)
+        pyperclip.copy(copyText['smile'])
+        speak(f'Скопировала {extra} в буфер обмена!')
+        Log(f'Скопированный текст {copyText}')
+    elif cmd == 'open':
+        program = getProgramByCmd(extra)
+        speak("Открываю {}".format(program['program']))
+        try:
+            os.startfile(program['program'])
+        except FileNotFoundError as e:
+            Log('Такой программы {} не существует!'.format(program['program']))
+            speak('Не могу найти такую программу!')
+    elif cmd == 'learn_cmd':
         pass
+    elif cmd == 'learn_tbr':
+        opts['tbr'] = opts['tbr'] + (extra, )
+        speak(f'Добавила {extra} в список исключений')
+        Log(f'Добавлено новое исключаемое слово: {extra}')
+        saver.saveState(opts)
+    elif cmd == 'learn_alias':
+        opts['alias'] = opts['alias'] + (extra, )
+        speak(f'Теперь меня можно называть {extra}')
+        Log(f'Добавлен новый алиас: {extra}')
+        saver.saveState(opts)
+    else:
+        SystemLog(f'CMD: {cmd} is not recognized ...')
+        Log(f'Команда не распознана: {cmd}')
+        speak('Не могу распознать команду')
+    SystemLog('CMD execution is done ...')
     
-
 # Запуск
-r = sr.Recognizer()
-m = sr.Microphone(device_index = 1)
+if __name__ == '__main__':
+    SystemLog('Loading commands ...')
+    SystemLog('Initialising commands ...')
 
-with m as source: 
-    r.adjust_for_ambient_noise(source)
+    SystemLog('Selecting microphone by device_index ...')
+    r = sr.Recognizer()
+    m = sr.Microphone(device_index = 0)
 
-speak_engine = pyttsx3.init()
+    SystemLog('Adjusting for ambient noises ...')
+    with m as source: 
+        r.adjust_for_ambient_noise(source)
 
-# Доп. пакет голосов
-# НЕ РАБОТАЕТ, ЫЫЫ(((99(
-# voices = speak_engine.getProperty('voices')
-# speak_engine.setProperty('voice', voices[4].id)
+    SystemLog('Initializing speak_engine ...')
 
-speak('Добрый день, Дмитрий!')
-speak('Я Вас слушаю!')
+    SystemLog('Saying hello to my greatest developer! (:*)')
+    speak('Добрый день, Дмитрий!')
+    speak('Я Вас слушаю!')
 
-stop_listening = r.listen_in_background(m, callback)
-while True: 
-    time.sleep(0.1)
+    SystemLog('Start listening in background ...')
+    stop_listening = r.listen_in_background(m, callback)
+
+    while(True):
+        time.sleep(0.1)

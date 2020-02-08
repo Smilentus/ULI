@@ -1,4 +1,4 @@
-SHOW_SYSTEM_LOG = False
+SHOW_SYSTEM_LOG = True
 SHOW_LOG = True
 
 def Log(text):
