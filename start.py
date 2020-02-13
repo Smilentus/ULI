@@ -9,6 +9,7 @@ import datetime
 import pyperclip
 import saver
 from logger import *
+from daylyorganizer import *
 
 # Глобальные переменные
 RECOGNITION_LIMIT = 80
@@ -71,7 +72,7 @@ def speak(what):
 def callback(recognizer, audio):
     try:
         voice = recognizer.recognize_google(audio, language='ru-RU').lower()
-        SystemLog('Connected to Google Recognize')
+        SystemLog('Connected to Google Recognizer')
         Log('Распознано: ' + voice)
         SystemLog(f'Recognized something: {voice}')
         if voice.startswith(opts['alias']):
@@ -177,9 +178,9 @@ def execute_cmd(cmd, extra=''):
         Log(f'Скопированный текст {copyText}')
     elif cmd == 'open':
         program = getProgramByCmd(extra)
-        speak("Открываю {}".format(program['program']))
         try:
             os.startfile(program['program'])
+            speak('Запускаю программу')
         except FileNotFoundError as e:
             Log('Такой программы {} не существует!'.format(program['program']))
             speak('Не могу найти такую программу!')
@@ -217,8 +218,22 @@ if __name__ == '__main__':
     SystemLog('Initializing speak_engine ...')
 
     SystemLog('Saying hello to my greatest developer! (:*)')
-    speak('Добрый день, Дмитрий!')
-    speak('Я Вас слушаю!')
+ 
+    hour = datetime.datetime.now().hour
+    if hour <= 6:
+        speak('Доброй ночи, Дмитрий!')
+    elif hour <= 12:
+        speak('Доброе утро, Дмитрий!')
+    elif hour <= 18:
+        speak('Добрый день, Дмитрий!')
+    else:
+        speak('Добрый вечер, Дмитрий!')     
+
+    # Информирование о том, что запланировано на сегодня
+    SystemLog('Initialising notification system ...')
+    initNotifications()
+    speak(checkNotifications())
+    SystemLog('Notification system loaded!')
 
     SystemLog('Start listening in background ...')
     stop_listening = r.listen_in_background(m, callback)
