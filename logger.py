@@ -5,6 +5,9 @@ def Log(text):
     if SHOW_LOG is True:
         print(f'[LOG] {text}')
 
+def ErrorLog(text):
+    print(f'[ERROR] {text}')
+
 def SystemLog(text):
     if SHOW_SYSTEM_LOG is True:
         print(f'[SYSTEM] {text}')
