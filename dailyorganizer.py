@@ -58,9 +58,3 @@ def checkNotifications():
         data = 'На сегодня нет запланированных дел!'
 
     return data
-
-addNotification('2020-02-14', '09:40', 'работа над дикцией')
-addNotification('2020-02-14', '09:50', 'работа над низким регистром')
-addNotification('2020-02-15', '09:40', 'работа над дикцией')
-initNotifications()
-print(checkNotifications())

@@ -9,7 +9,7 @@ import datetime
 import pyperclip
 import saver
 from logger import *
-from daylyorganizer import *
+from dailyorganizer import *
 
 # Глобальные переменные
 RECOGNITION_LIMIT = 80
@@ -17,7 +17,7 @@ RECOGNITION_LIMIT = 80
 # Доступные команды
 opts = {
     "alias": ('юля', 'юль', 'юленька', 'юляш', 'юла', 'юлик', 'юлия'),
-    "tbr": ('что', 'на', 'скопировать', 'исключаемое', 'новое', 'пропускное', 'удаляемое', 'скопируй', 'дай', 'который', 'добавь', 'новая', 'запомни', 'выучи', 'сколько', 'по', 'сейчас', 'мне', 'какой', 'новую'),
+    "tbr": ('что', 'покажи', 'на', 'скопировать', 'исключаемое', 'новое', 'пропускное', 'удаляемое', 'скопируй', 'дай', 'который', 'добавь', 'новая', 'запомни', 'выучи', 'сколько', 'по', 'сейчас', 'мне', 'какой', 'новую'),
     "cmds": {
         "ctime": ('время', 'час', 'часах'),
         "copy": ('смайлик', ),
@@ -25,6 +25,7 @@ opts = {
         "learn_alias": ('имя', 'алиас', 'кличка', 'кличку'),
         "learn_tbr": ('слово', 'исключение'),
         "open": ('открой', 'открыть', 'запусти', 'включи', 'запустить', 'включить'),
+        "show_plans": ('уведомления', 'нотификации', 'планы', 'расписание')
     }
 }
 
@@ -196,6 +197,8 @@ def execute_cmd(cmd, extra=''):
         speak(f'Теперь меня можно называть {extra}')
         Log(f'Добавлен новый алиас: {extra}')
         saver.saveState(opts)
+    elif cmd == 'show_plans':
+        speak(checkNotifications())
     else:
         SystemLog(f'CMD: {cmd} is not recognized ...')
         Log(f'Команда не распознана: {cmd}')
@@ -215,6 +218,12 @@ if __name__ == '__main__':
     with m as source: 
         r.adjust_for_ambient_noise(source)
 
+    # Информирование о том, что запланировано на сегодня
+    SystemLog('Initialising notification system ...')
+    initNotifications()
+    speak(checkNotifications())
+    SystemLog('Notification system loaded!')
+
     SystemLog('Initializing speak_engine ...')
 
     SystemLog('Saying hello to my greatest developer! (:*)')
@@ -228,12 +237,6 @@ if __name__ == '__main__':
         speak('Добрый день, Дмитрий!')
     else:
         speak('Добрый вечер, Дмитрий!')     
-
-    # Информирование о том, что запланировано на сегодня
-    SystemLog('Initialising notification system ...')
-    initNotifications()
-    speak(checkNotifications())
-    SystemLog('Notification system loaded!')
 
     SystemLog('Start listening in background ...')
     stop_listening = r.listen_in_background(m, callback)
