@@ -3,11 +3,11 @@ import sys
 import time
 import speech_recognition as sr
 from fuzzywuzzy import fuzz
-import pyttsx3
-import pyaudio
 import datetime
 import pyperclip
 import saver
+
+from speaker import *
 from logger import *
 from dailyorganizer import *
 
@@ -25,7 +25,8 @@ opts = {
         "learn_alias": ('имя', 'алиас', 'кличка', 'кличку'),
         "learn_tbr": ('слово', 'исключение'),
         "open": ('открой', 'открыть', 'запусти', 'включи', 'запустить', 'включить'),
-        "show_plans": ('уведомления', 'нотификации', 'планы', 'расписание')
+        "show_plans": ('уведомления', 'нотификации', 'планы', 'расписание'),
+        "": (),
     }
 }
 
@@ -47,28 +48,6 @@ smthToCopy = {
     ":)": ('улыбка', 'радость', 'счастье'),
     ":D": ('смех') 
     }
-
-# Объект голосовой штучки
-# Короче костыльное решение, потому что pyttsx3 с приколом
-# Суть в том, что runAndWait() уходит в бесконечный цикл
-class _TTS:
-    engine = None
-
-    def __init__(self):
-        self.engine = pyttsx3.init()
-    
-    def speak(self, text):
-        self.engine.say(text)
-        self.engine.runAndWait()
-
-# Функции
-def speak(what):
-    SystemLog('Started speak_engine ...')
-    print(f'[SPEAKING] {what}')
-    tts = _TTS()
-    tts.speak(str(what))
-    del(tts)
-    SystemLog('Stopped speak_engine.')
     
 def callback(recognizer, audio):
     try:
@@ -221,7 +200,6 @@ if __name__ == '__main__':
     # Информирование о том, что запланировано на сегодня
     SystemLog('Initialising notification system ...')
     initNotifications()
-    speak(checkNotifications())
     SystemLog('Notification system loaded!')
 
     SystemLog('Initializing speak_engine ...')
@@ -237,6 +215,8 @@ if __name__ == '__main__':
         speak('Добрый день, Дмитрий!')
     else:
         speak('Добрый вечер, Дмитрий!')     
+
+    speak(checkNotifications())
 
     SystemLog('Start listening in background ...')
     stop_listening = r.listen_in_background(m, callback)
