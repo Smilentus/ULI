@@ -1,6 +1,7 @@
 from logger import *
 import pyttsx3
 import pyaudio
+import time
 
 # Объект голосовой штучки
 # Короче костыльное решение, потому что pyttsx3 с приколом
@@ -15,11 +16,20 @@ class _TTS:
         self.engine.say(text)
         self.engine.runAndWait()
 
+queue = []
+
 # Функции
 def speak(what):
-    SystemLog('Started speak_engine ...')
-    print(f'[SPEAKING] {what}')
-    tts = _TTS()
-    tts.speak(str(what))
-    del(tts)
-    SystemLog('Stopped speak_engine.')
+    queue.append(what)
+
+def speakingCycle():
+    while True:
+        if len(queue) > 0:
+            SystemLog('Started speak_engine ...')
+            text = str(queue.pop(0))
+            print(f'[SPEAKING] {text}')
+            tts = _TTS()
+            tts.speak(text)
+            del(tts)
+            SystemLog('Stopped speak_engine.')
+        time.sleep(0.1)
