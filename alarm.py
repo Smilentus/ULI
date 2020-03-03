@@ -6,7 +6,7 @@ import random
 from speaker import *
 from logger import *
 
-musicPath = "C:/Users/gilev/Music/alarms"
+musicPath = "C:/Users/gilev/Music/alarms/"
 alarmTime = "8:00"
 isActive = True
 
@@ -22,7 +22,15 @@ def initCounting():
 
 def checkAlarm():
     SystemLog('Checking alarms ...')
-    curTime = "{}:{}".format(datetime.datetime.now().hour, datetime.datetime.now().minute)
+    hours = datetime.datetime.now().hour
+    minutes = datetime.datetime.now().minute
+    
+    if minutes < 10:
+        minutes = '0{}'.format(minutes)
+
+    curTime = "{}:{}".format(hours, minutes)
+
+    print(curTime)
 
     if curTime == alarmTime:
         startAlarm()
@@ -31,17 +39,29 @@ def checkAlarm():
 def startAlarm():
     SystemLog('Будильник на {} сработал'.format(alarmTime))
     speak('Доброе утро, Дмитрий!')
-    speak('Время просыпаться!')
+    time.sleep(3)
+    speak('Пора просыпаться!')
+    time.sleep(3)
+    speak('Время ' + alarmTime + ". Сегодня " + getWeekDay())
+    time.sleep(3)
+    # speak('Погода на сегодня: ')
+    # time.sleep(3)
     speak('Включаю крутую музыку для мотивации!')
+    time.sleep(3)
     startMusic()
+
+def getWeekDay():
+    sheet = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
+    return sheet[datetime.datetime.weekday(datetime.datetime.now())]
+
+def getWeatherInfo():
+    return 'Nothing'
 
 def startMusic():
     files = os.listdir(musicPath)
 
-    SystemLog("Кол-во доступных аудиозаписейи: " + len(files))
     sound = files[random.randint(0, len(files) - 1)]
 
     path = musicPath + "/" + sound
-    SystemLog("Выбранная аудиодорожка: " + path)
 
     os.startfile(path)
