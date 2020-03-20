@@ -3,15 +3,19 @@ import datetime
 import os
 import random
 
+from dailyorganizer import *
+from weather import *
+from news import *
 from speaker import *
 from logger import *
 
 musicPath = "C:/Users/gilev/Music/alarms/"
-alarmTime = "8:00"
+alarmTime = "6:00"
 isActive = True
 
 def initCounting():
     SystemLog('Start calibration of alarm time counter ...')
+    checkAlarm()
     delta = 60 - datetime.datetime.now().second
     time.sleep(delta)
     SystemLog('Alarm time counter calibrated!')
@@ -39,13 +43,11 @@ def checkAlarm():
 def startAlarm():
     SystemLog('Будильник на {} сработал'.format(alarmTime))
     speak('Доброе утро, Дмитрий!')
-    time.sleep(3)
     speak('Пора просыпаться!')
-    time.sleep(3)
     speak('Время ' + alarmTime + ". Сегодня " + getWeekDay())
-    time.sleep(3)
-    # speak('Погода на сегодня: ')
-    # time.sleep(3)
+    speak(getWeatherInfo())
+    speak(checkNotifications())
+    time.sleep(50)
     speak('Включаю крутую музыку для мотивации!')
     time.sleep(3)
     startMusic()
@@ -55,7 +57,7 @@ def getWeekDay():
     return sheet[datetime.datetime.weekday(datetime.datetime.now())]
 
 def getWeatherInfo():
-    return 'Nothing'
+    return getWeather()
 
 def startMusic():
     files = os.listdir(musicPath)

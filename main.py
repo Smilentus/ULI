@@ -9,6 +9,8 @@ import saver
 from threading import Thread
 
 import alarm
+from weather import *
+from news import *
 from speaker import *
 from logger import *
 from dailyorganizer import *
@@ -48,7 +50,7 @@ smthToOpen = {
 smthToCopy = { 
     "¯\_(ツ)_/¯": ('разведение руками', 'не знаю', 'бывает', 'хм'),
     ":)": ('улыбка', 'радость', 'счастье'),
-    ":D": ('смех') 
+    ":D": ('смех', ) 
     }
     
 def callback(recognizer, audio):
@@ -223,6 +225,9 @@ def startCycle():
         speak('Добрый день, Дмитрий!')
     else:
         speak('Добрый вечер, Дмитрий!')     
+
+    speak('Время ' + alarm.alarmTime + ". Сегодня " + alarm.getWeekDay())
+    speak(alarm.getWeatherInfo())
 
     speak(checkNotifications())
 
